@@ -13,6 +13,8 @@ use solana_sdk::{
 };
 use tracing::{error, info};
 
+use crate::jito::{self, get_tip_account, get_tip_value, wait_for_bundle_confirmation};
+
 pub async fn sign_and_send_transaction(
   client: &RpcClient,
   keypair: &Keypair,
@@ -67,58 +69,58 @@ pub async fn sign_and_send_transaction(
     tip = tip.min(0.1);
     let tip_lamports = ui_amount_to_amount(tip, spl_token::native_mint::DECIMALS);
     info!(
-        "tip account: {}, tip(sol): {}, lamports: {}",
-        tip_account, tip, tip_lamports
+      "tip account: {}, tip(sol): {}, lamports: {}",
+      tip_account, tip, tip_lamports
     );
 
     let jito_client = Arc::new(JitoRpcClient::new(format!(
-        "{}/api/v1/bundles",
-        jito::BLOCK_ENGINE_URL.to_string()
+      "{}/api/v1/bundles",
+      jito::BLOCK_ENGINE_URL.to_string()
     )));
     // tip tx
     let mut bundle: Vec<VersionedTransaction> = vec![];
     bundle.push(VersionedTransaction::from(txn));
     bundle.push(VersionedTransaction::from(system_transaction::transfer(
-        &keypair,
-        &tip_account,
-        tip_lamports,
-        recent_blockhash,
+      &keypair,
+      &tip_account,
+      tip_lamports,
+      recent_blockhash,
     )));
     let bundle_id = jito_client.send_bundle(&bundle).await?;
     txs = match wait_for_bundle_confirmation(
-        move |id: String| {
-            let client = Arc::clone(&jito_client);
-            async move {
-                let response = client.get_bundle_statuses(&[id]).await;
-                let statuses = response.inspect_err(|err| {
-                    error!("Error fetching bundle status: {:?}", err);
-                })?;
-                Ok(statuses.value)
-            }
-        },
-        bundle_id,
-        Duration::from_millis(1000),
-        Duration::from_secs(10),
+      move |id: String| {
+        let client = Arc::clone(&jito_client);
+        async move {
+          let response = client.get_bundle_statuses(&[id]).await;
+          let statuses = response.inspect_err(|err| {
+            error!("Error fetching bundle status: {:?}", err);
+          })?;
+          Ok(statuses.value)
+        }
+      },
+      bundle_id,
+      Duration::from_millis(1000),
+      Duration::from_secs(10),
     )
     .await {
-        Ok(signatures) => {  
-            // Log success information  
-            println!("Bundle confirmed successfully with signatures: {:?}", signatures);  
-            signatures // Return the signatures  
-        },
-        Err(err) => {
-            // Check if the error is related to slippage
-            if err.to_string().contains("Slippage tolerance exceeded") {
-                // Return the slippage error along with any transaction signatures we might have.
-                error!("Slippage error detected: {}", err);
-                return Ok(vec![format!("Slippage Error: {}", err)]); // Or a custom error string.
-            } else {
-                // If it's a different error, propagate it.
-                println!("Bundle confirmation error: {}", err);
-                println!();
-                return Err(anyhow!("Bundle confirmation error: {}", err));
-            }
+      Ok(signatures) => {  
+        // Log success information  
+        println!("Bundle confirmed successfully with signatures: {:?}", signatures);  
+        signatures // Return the signatures  
+      },
+      Err(err) => {
+        // Check if the error is related to slippage
+        if err.to_string().contains("Slippage tolerance exceeded") {
+          // Return the slippage error along with any transaction signatures we might have.
+          error!("Slippage error detected: {}", err);
+          return Ok(vec![format!("Slippage Error: {}", err)]); // Or a custom error string.
+        } else {
+          // If it's a different error, propagate it.
+          println!("Bundle confirmation error: {}", err);
+          println!();
+          return Err(anyhow!("Bundle confirmation error: {}", err));
         }
+      }
     };
   } else {
     let sig = common::rpc::send_txn(&client, &txn, true)?;

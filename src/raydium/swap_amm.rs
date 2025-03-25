@@ -184,38 +184,38 @@ pub async fn swap_amm(
 
     SwapDirection::Sell => {
       let in_account = get_account_info_from_address(
-          nonblocking_client.clone(),
-          &token_in,
-          &in_ata,
+        nonblocking_client.clone(),
+        &token_in,
+        &in_ata,
       )
       .await?;
       let in_mint =
-          get_mint_info(nonblocking_client.clone(), &token_in).await?;
+        get_mint_info(nonblocking_client.clone(), &token_in).await?;
       let amount = match in_type {
-          SwapInType::Quantity => ui_amount_to_amount(amount_in, in_mint.base.decimals),
-          SwapInType::Percentage => {
-              let amount_in_pct = amount_in.min(1.0);
-              if amount_in_pct == 1.0 {
-                  // sell all, close ata
-                  info!("sell all. will be close ATA for mint {}", token_in);
-                  close_instruction = Some(spl_token::instruction::close_account(
-                      &program_id,
-                      &in_ata,
-                      &owner,
-                      &owner,
-                      &vec![&owner],
-                  )?);
-                  in_account.base.amount
-              } else {
-                  (amount_in_pct * 100.0) as u64 * in_account.base.amount / 100
-              }
+        SwapInType::Quantity => ui_amount_to_amount(amount_in, in_mint.base.decimals),
+        SwapInType::Percentage => {
+          let amount_in_pct = amount_in.min(1.0);
+          if amount_in_pct == 1.0 {
+            // sell all, close ata
+            info!("sell all. will be close ATA for mint {}", token_in);
+            close_instruction = Some(spl_token::instruction::close_account(
+              &program_id,
+              &in_ata,
+              &owner,
+              &owner,
+              &vec![&owner],
+            )?);
+            in_account.base.amount
+          } else {
+            (amount_in_pct * 100.0) as u64 * in_account.base.amount / 100
           }
+        }
       };
       (
         amount,
         (
-            amount_to_ui_amount(amount, in_mint.base.decimals),
-            in_mint.base.decimals,
+          amount_to_ui_amount(amount, in_mint.base.decimals),
+          in_mint.base.decimals,
         ),
       )
     }
@@ -256,23 +256,23 @@ pub async fn swap_amm(
     // LAMPORTS_PER_SOL / 100 // 0.01 SOL as rent
     // get rent
     let rent = nonblocking_client
-        .get_minimum_balance_for_rent_exemption(Account::LEN)
-        .await?;
+      .get_minimum_balance_for_rent_exemption(Account::LEN)
+      .await?;
     // if buy add amount_specified
     let total_amount = if token_in == native_mint {
-        rent + amount_specified
+      rent + amount_specified
     } else {
-        rent
+      rent
     };
     // create tmp wsol account
     instructions.push(system_instruction::create_account_with_seed(
-        &owner,
-        &wsol_pubkey,
-        &owner,
-        seed,
-        total_amount,
-        Account::LEN as u64, // 165, // Token account size
-        &spl_token::id(),
+      &owner,
+      &wsol_pubkey,
+      &owner,
+      seed,
+      total_amount,
+      Account::LEN as u64, // 165, // Token account size
+      &spl_token::id(),
     ));
 
     // initialize account
@@ -296,10 +296,10 @@ pub async fn swap_amm(
     if let Some(wsol_account) = wsol_account {
       match swap_direction {
         SwapDirection::Buy => {
-            final_in_ata = wsol_account;
+          final_in_ata = wsol_account;
         }
         SwapDirection::Sell => {
-            final_out_ata = wsol_account;
+          final_out_ata = wsol_account;
         }
       }
       close_wsol_account_instruction = Some(spl_token::instruction::close_account(
@@ -313,31 +313,31 @@ pub async fn swap_amm(
 
     // build swap instruction
     let build_swap_instruction = amm_swap(
-        &amm_program,
-        swap_info_result,
-        &owner,
-        &final_in_ata,
-        &final_out_ata,
-        amount_specified,
-        other_amount_threshold,
-        swap_base_in,
+      &amm_program,
+      swap_info_result,
+      &owner,
+      &final_in_ata,
+      &final_out_ata,
+      amount_specified,
+      other_amount_threshold,
+      swap_base_in,
     )?;
     info!(
-        "amount_specified: {}, other_amount_threshold: {}, wsol_account: {:?}",
-        amount_specified, other_amount_threshold, wsol_account
+      "amount_specified: {}, other_amount_threshold: {}, wsol_account: {:?}",
+      amount_specified, other_amount_threshold, wsol_account
     );
     instructions.push(build_swap_instruction);
     // close wsol account
     if let Some(close_wsol_account_instruction) = close_wsol_account_instruction {
-        instructions.push(close_wsol_account_instruction);
+      instructions.push(close_wsol_account_instruction);
     }
   }
   
   if let Some(close_instruction) = close_instruction {
-      instructions.push(close_instruction);
+    instructions.push(close_instruction);
   }
   if instructions.len() == 0 {
-      return Err(anyhow!("instructions is empty, no tx required"));
+    return Err(anyhow!("instructions is empty, no tx required"));
   }
 
   sign_and_send_transaction(&blocking_client, &keypair, instructions, use_jito).await
@@ -651,27 +651,27 @@ pub fn amm_swap(
       other_amount_threshold,
     )?
   } else {
-      raydium_amm::instruction::swap_base_out(
-        &amm_program,
-        &result.pool_id,
-        &result.amm_authority,
-        &result.amm_open_orders,
-        &result.amm_coin_vault,
-        &result.amm_pc_vault,
-        &result.market_program,
-        &result.market,
-        &result.market_bids,
-        &result.market_asks,
-        &result.market_event_queue,
-        &result.market_coin_vault,
-        &result.market_pc_vault,
-        &result.market_vault_signer,
-        user_source,
-        user_destination,
-        user_owner,
-        other_amount_threshold,
-        amount_specified,
-      )?
+    raydium_amm::instruction::swap_base_out(
+      &amm_program,
+      &result.pool_id,
+      &result.amm_authority,
+      &result.amm_open_orders,
+      &result.amm_coin_vault,
+      &result.amm_pc_vault,
+      &result.market_program,
+      &result.market,
+      &result.market_bids,
+      &result.market_asks,
+      &result.market_event_queue,
+      &result.market_coin_vault,
+      &result.market_pc_vault,
+      &result.market_vault_signer,
+      user_source,
+      user_destination,
+      user_owner,
+      other_amount_threshold,
+      amount_specified,
+    )?
   };
 
   Ok(swap_instruction)
