@@ -238,8 +238,8 @@ pub async fn swap_amm(
   info!("swap_info_result: {:#?}", swap_info_result);
 
   info!(
-      "swap: {}, value: {:?} -> {}",
-      token_in, amount_ui_pretty, token_out
+    "swap: {}, value: {:?} -> {}",
+    token_in, amount_ui_pretty, token_out
   );
 
   // Build instructions

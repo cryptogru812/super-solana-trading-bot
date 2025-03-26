@@ -45,8 +45,8 @@ async fn get_pool_type(client: &RpcClient, pool_id: &str) -> Result<PoolType> {
     "CAMMCzo5YL8w4VFF8KVHrK22GGUsp5VTaW7grrKgrWqK" => Ok(PoolType::CLMM), // Orca Whirlpools
     "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C" => Ok(PoolType::CPMM), // Orca CPMM
     _ => Err(anyhow!(
-        "Unknown pool type for program ID: {}",
-        account.owner
+      "Unknown pool type for program ID: {}",
+      account.owner
     )),
   }
 }
@@ -159,35 +159,35 @@ async fn main() -> Result<()> {
         PoolType::AMM => {
           println!("Get Pool Price AMM ...");
           match get_pool_price(Some(&pool_id), None).await {
-              Ok((_base_amount, _quote_amount, current_price)) => {
-                  println!("Current Price {} SOL", current_price);
-                  if current_price > target_price {
-                      is_swap = true;
-                  }
+            Ok((_base_amount, _quote_amount, current_price)) => {
+              println!("Current Price {} SOL", current_price);
+              if current_price > target_price {
+                is_swap = true;
               }
-              Err(e) => eprintln!("Error fetching pool price: {}", e),
+            }
+            Err(e) => eprintln!("Error fetching pool price: {}", e),
           }
         }
         PoolType::CPMM => {
           println!("Get Pool Price CPMM ...");
           match get_pool_price_cpmm(Some(&pool_id), wallet.insecure_clone(), rpc_client.clone()).await {
-              Ok(current_price) => {
-                  println!("Current Price {} SOL", current_price);
-                  if current_price > target_price {
-                      is_swap = true;
-                  }
+            Ok(current_price) => {
+              println!("Current Price {} SOL", current_price);
+              if current_price > target_price {
+                is_swap = true;
               }
-              Err(e) => eprintln!("Error fetching pool price: {}", e),
+            }
+            Err(e) => eprintln!("Error fetching pool price: {}", e),
           }
         }
         PoolType::CLMM => {
           println!("Get Pool Price CLMM ...");
           match get_pool_price_clmm(Some(&pool_id), rpc_client.clone()).await {
             Ok(current_price) => {
-                println!("Current Price {} SOL", current_price);
-                if current_price > target_price {
-                    is_swap = true;
-                }
+              println!("Current Price {} SOL", current_price);
+              if current_price > target_price {
+                is_swap = true;
+              }
             }
             Err(e) => eprintln!("Error fetching pool price: {}", e),
           }
@@ -197,15 +197,15 @@ async fn main() -> Result<()> {
         let mut slippage_tolerance: u64 = 30; // Initial slippage tolerance (e.g., 30 = 0.3%)
         let max_slippage: u64 = 90; // Maximum slippage tolerance we'll allow
         match swap(
-            Some(&pool_id),
-            wallet.insecure_clone(),
-            &mint,
-            swap_amount,
-            SwapDirection::Sell,
-            SwapInType::Percentage,
-            slippage_tolerance,
-            use_jito,
-            pool_type.clone(),
+          Some(&pool_id),
+          wallet.insecure_clone(),
+          &mint,
+          swap_amount,
+          SwapDirection::Sell,
+          SwapInType::Percentage,
+          slippage_tolerance,
+          use_jito,
+          pool_type.clone(),
         )
         .await
         {
