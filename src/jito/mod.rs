@@ -3,7 +3,7 @@ use std::{future::Future, str::FromStr, sync::LazyLock, time::Duration};
 use anyhow::{anyhow, Result};
 use api::{get_tip_accounts, TipAccountResult};
 use indicatif::{ProgressBar, ProgressStyle};
-use rand::{seq::IteratorRandom, thread_rng};
+use rand::{seq::IteratorRandom, rng};
 use serde::Deserialize;
 use serde_json::Value;
 use solana_sdk::pubkey::Pubkey;
@@ -55,7 +55,7 @@ pub async fn init_tip_accounts() -> Result<()> {
 
 pub async fn get_tip_account() -> Result<Pubkey> {
     let accounts = TIP_ACCOUNTS.read().await;
-    let mut rng = thread_rng();
+    let mut rng = rng();
     match accounts.iter().choose(&mut rng) {
       Some(acc) => Ok(Pubkey::from_str(acc).inspect_err(|err| {
           error!("jito: failed to parse Pubkey: {:?}", err);
